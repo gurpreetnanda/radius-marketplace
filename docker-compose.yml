@@ -1,0 +1,31 @@
+version: "3"
+services:
+  marketplace-postgres:
+    image: postgres:11
+    container_name: marketplace_postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - marketplace-postgres-data:/var/lib/postgresql/data
+  marketplace-redis:
+    image: redis:6.0-rc1
+    container_name: marketplace_redis
+    ports:
+      - 6379:6379
+    volumes:
+      - marketplace-redis-data:/data
+  marketplace-app:
+    container_name: marketplace_app
+    image: marketplace-app:0.0.1
+    build: .
+    ports:
+      - 8090:8090
+    environment:
+      SERVER_PORT: 8090
+      SPRING_DATASOURCE_URL: jdbc:postgresql://marketplace-postgres:5432/marketplace
+    depends_on:
+        - marketplace-postgres
+        - marketplace-redis
+volumes:
+  marketplace-postgres-data:
+  marketplace-redis-data:

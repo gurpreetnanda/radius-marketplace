@@ -1,7 +1,7 @@
 package com.radius.marketplace.controller;
 
 import com.radius.marketplace.model.Property;
-import com.radius.marketplace.model.Requirement;
+import com.radius.marketplace.model.RequirementSearchResponse;
 import com.radius.marketplace.service.PropertyService;
 import com.radius.marketplace.service.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class PropertyController {
     }
 
     @PostMapping
-    public List<Requirement> save(@RequestBody Property property) {
+    public List<RequirementSearchResponse> save(@RequestBody Property property) {
         propertyService.save(property);
         return searchService.searchByProperty(property);
     }

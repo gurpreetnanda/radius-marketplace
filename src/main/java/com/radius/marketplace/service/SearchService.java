@@ -4,6 +4,7 @@ import com.radius.marketplace.constants.RedisKeys;
 import com.radius.marketplace.model.Property;
 import com.radius.marketplace.model.PropertySearchResponse;
 import com.radius.marketplace.model.Requirement;
+import com.radius.marketplace.model.RequirementSearchResponse;
 import com.radius.marketplace.util.SearchUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.geo.Circle;
@@ -21,19 +22,21 @@ import java.util.stream.Collectors;
 
 @Service
 public class SearchService {
-    // todo: configurable
-    public static final int RADIUS = 10;
     public static final RedisGeoCommands.GeoRadiusCommandArgs GEO_ARGS = RedisGeoCommands.GeoRadiusCommandArgs
             .newGeoRadiusArgs()
             .includeDistance()
             .sortAscending();
     private final GeoOperations<String, String> geoOperations;
     private final PropertyService propertyService;
+    private final RequirementService requirementService;
 
     @Autowired
-    public SearchService(StringRedisTemplate stringRedisTemplate, PropertyService propertyService) {
+    public SearchService(StringRedisTemplate stringRedisTemplate,
+                         PropertyService propertyService,
+                         RequirementService requirementService) {
         this.geoOperations = stringRedisTemplate.opsForGeo();
         this.propertyService = propertyService;
+        this.requirementService = requirementService;
     }
 
     public List<Property> searchByRequirementId(int requirementId) {
@@ -47,7 +50,7 @@ public class SearchService {
     }
 
     public List<PropertySearchResponse> searchByRequirement(Requirement requirement) {
-        Circle searchCircle = SearchUtil.createCircle(requirement.getLatitude(), requirement.getLongitude(), RADIUS);
+        Circle searchCircle = SearchUtil.createSearchCircle(requirement.getLatitude(), requirement.getLongitude());
         GeoResults<RedisGeoCommands.GeoLocation<String>> results = geoOperations.radius(RedisKeys.PROPERTIES.getKey(),
                 searchCircle, GEO_ARGS);
         if (null == results) {
@@ -69,8 +72,27 @@ public class SearchService {
                 .orElse(null);
     }
 
-    public List<Requirement> searchByProperty(Property property) {
+    public List<RequirementSearchResponse> searchByProperty(Property property) {
+        Circle searchCircle = SearchUtil.createSearchCircle(property.getLatitude(), property.getLongitude());
+        GeoResults<RedisGeoCommands.GeoLocation<String>> results = geoOperations.radius(RedisKeys.REQUIREMENTS.getKey(),
+                searchCircle, GEO_ARGS);
+        if (null == results) {
+            return Collections.emptyList();
+        }
+        return results.getContent().stream()
+                .map(this::createRequirementSearchResponse)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
         // todo:
-        return Collections.emptyList();
+    }
+
+
+    private RequirementSearchResponse createRequirementSearchResponse(GeoResult<RedisGeoCommands.GeoLocation<String>> result) {
+        return requirementService.findById(result.getContent().getName())
+                .map(a -> RequirementSearchResponse.builder()
+                        .requirement(a)
+                        .distance(result.getDistance().getValue())
+                        .build())
+                .orElse(null);
     }
 }

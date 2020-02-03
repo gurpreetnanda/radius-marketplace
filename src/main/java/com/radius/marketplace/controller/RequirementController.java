@@ -12,8 +12,8 @@ import java.util.List;
 @RestController
 @RequestMapping("requirement")
 public class RequirementController {
-    private RequirementService requirementService;
-    private SearchService searchService;
+    private final RequirementService requirementService;
+    private final SearchService searchService;
 
     @Autowired
     public RequirementController(RequirementService requirementService, SearchService searchService) {
@@ -34,6 +34,6 @@ public class RequirementController {
     @PostMapping
     public List<PropertySearchResponse> save(@RequestBody Requirement requirement) {
         requirementService.save(requirement);
-        return searchService.searchByRequirement(requirement);
+        return searchService.searchPropertiesByRequirement(requirement);
     }
 }

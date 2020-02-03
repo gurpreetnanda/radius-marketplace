@@ -16,8 +16,8 @@ import java.util.Optional;
 
 @Service
 public class PropertyService {
-    private PropertyRepository repository;
-    private GeoOperations<String, String> geoOperations;
+    private final PropertyRepository repository;
+    private final GeoOperations<String, String> geoOperations;
 
     @Autowired
     public PropertyService(PropertyRepository repository, StringRedisTemplate stringRedisTemplate) {

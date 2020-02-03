@@ -39,17 +39,13 @@ public class SearchService {
         this.requirementService = requirementService;
     }
 
-    public List<Property> searchByRequirementId(int requirementId) {
-        // todo:
-        return Collections.emptyList();
+    public List<PropertySearchResponse> searchPropertiesByRequirementId(String requirementId) {
+        return requirementService.findById(requirementId)
+                .map(this::searchPropertiesByRequirement)
+                .orElse(Collections.emptyList());
     }
 
-    public List<Requirement> searchByPropertyId(int propertyId) {
-        // todo:
-        return Collections.emptyList();
-    }
-
-    public List<PropertySearchResponse> searchByRequirement(Requirement requirement) {
+    public List<PropertySearchResponse> searchPropertiesByRequirement(Requirement requirement) {
         Circle searchCircle = SearchUtil.createSearchCircle(requirement.getLatitude(), requirement.getLongitude());
         GeoResults<RedisGeoCommands.GeoLocation<String>> results = geoOperations.radius(RedisKeys.PROPERTIES.getKey(),
                 searchCircle, GEO_ARGS);
@@ -72,7 +68,13 @@ public class SearchService {
                 .orElse(null);
     }
 
-    public List<RequirementSearchResponse> searchByProperty(Property property) {
+    public List<RequirementSearchResponse> searchRequirementsByPropertyId(String propertyId) {
+        return propertyService.findById(propertyId)
+                .map(this::searchRequirementsByProperty)
+                .orElse(Collections.emptyList());
+    }
+
+    public List<RequirementSearchResponse> searchRequirementsByProperty(Property property) {
         Circle searchCircle = SearchUtil.createSearchCircle(property.getLatitude(), property.getLongitude());
         GeoResults<RedisGeoCommands.GeoLocation<String>> results = geoOperations.radius(RedisKeys.REQUIREMENTS.getKey(),
                 searchCircle, GEO_ARGS);
@@ -85,7 +87,6 @@ public class SearchService {
                 .collect(Collectors.toList());
         // todo:
     }
-
 
     private RequirementSearchResponse createRequirementSearchResponse(GeoResult<RedisGeoCommands.GeoLocation<String>> result) {
         return requirementService.findById(result.getContent().getName())

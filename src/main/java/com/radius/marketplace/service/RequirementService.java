@@ -16,8 +16,8 @@ import java.util.Optional;
 
 @Service
 public class RequirementService {
-    private RequirementRepository repository;
-    private GeoOperations<String, String> geoOperations;
+    private final RequirementRepository repository;
+    private final GeoOperations<String, String> geoOperations;
 
     @Autowired
     public RequirementService(RequirementRepository repository, StringRedisTemplate stringRedisTemplate) {

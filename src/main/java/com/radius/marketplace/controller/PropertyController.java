@@ -12,8 +12,8 @@ import java.util.List;
 @RestController
 @RequestMapping("property")
 public class PropertyController {
-    private PropertyService propertyService;
-    private SearchService searchService;
+    private final PropertyService propertyService;
+    private final SearchService searchService;
 
     @Autowired
     public PropertyController(PropertyService propertyService, SearchService searchService) {
@@ -34,6 +34,6 @@ public class PropertyController {
     @PostMapping
     public List<RequirementSearchResponse> save(@RequestBody Property property) {
         propertyService.save(property);
-        return searchService.searchByProperty(property);
+        return searchService.searchRequirementsByProperty(property);
     }
 }

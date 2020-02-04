@@ -16,6 +16,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -24,8 +25,7 @@ import java.util.stream.Collectors;
 public class SearchService {
     public static final RedisGeoCommands.GeoRadiusCommandArgs GEO_ARGS = RedisGeoCommands.GeoRadiusCommandArgs
             .newGeoRadiusArgs()
-            .includeDistance()
-            .sortAscending();
+            .includeDistance();
     private final GeoOperations<String, String> geoOperations;
     private final PropertyService propertyService;
     private final RequirementService requirementService;
@@ -53,18 +53,38 @@ public class SearchService {
             return Collections.emptyList();
         }
         return results.getContent().stream()
-                .map(this::createPropertySearchResponse)
+                .map(result -> createPropertySearchResponse(result, requirement))
                 .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(PropertySearchResponse::getMatchPercentage).reversed())
+//                .filter(a -> a.getMatchPercentage() >= 40)
                 .collect(Collectors.toList());
         // todo:
     }
 
-    private PropertySearchResponse createPropertySearchResponse(GeoResult<RedisGeoCommands.GeoLocation<String>> result) {
+    private PropertySearchResponse createPropertySearchResponse(GeoResult<RedisGeoCommands.GeoLocation<String>> result,
+                                                                Requirement requirement) {
         return propertyService.findById(result.getContent().getName())
-                .map(a -> PropertySearchResponse.builder()
-                        .property(a)
-                        .distance(result.getDistance().getValue())
-                        .build())
+                .map(property -> {
+                    double minBudget = requirement.getMinBudget();
+                    double maxBudget = requirement.getMaxBudget();
+                    double budgetOffPrice = SearchUtil.calculateBudgetOffPrice(property.getPrice(),
+                            minBudget,
+                            maxBudget);
+                    double budgetOffPercentage = SearchUtil.calculateBudgetOffPercentage(property.getPrice(),
+                            minBudget,
+                            maxBudget);
+//                    if (budgetOffPercentage > MAX_BUDGET_PERC_DIFF_ALLOWED)
+//                        return null;
+                    double distance = result.getDistance().getValue();
+                    return PropertySearchResponse.builder()
+                            .property(property)
+                            .distance(distance)
+                            .budgetOffPrice(budgetOffPrice)
+                            .budgetOffPercentage(budgetOffPercentage)
+                            .distanceMatchPercentage(SearchUtil.calculateDistanceMatchPercentage(distance))
+                            .budgetMatchPercentage(SearchUtil.calculateBudgetMatchPercentage(budgetOffPercentage))
+                            .build();
+                })
                 .orElse(null);
     }
 
@@ -90,10 +110,14 @@ public class SearchService {
 
     private RequirementSearchResponse createRequirementSearchResponse(GeoResult<RedisGeoCommands.GeoLocation<String>> result) {
         return requirementService.findById(result.getContent().getName())
-                .map(a -> RequirementSearchResponse.builder()
-                        .requirement(a)
-                        .distance(result.getDistance().getValue())
-                        .build())
+                .map(requirement -> {
+                    double distance = result.getDistance().getValue();
+                    return RequirementSearchResponse.builder()
+                            .requirement(requirement)
+                            .distance(distance)
+                            .distanceMatchPercentage(SearchUtil.calculateDistanceMatchPercentage(distance))
+                            .build();
+                })
                 .orElse(null);
     }
 }

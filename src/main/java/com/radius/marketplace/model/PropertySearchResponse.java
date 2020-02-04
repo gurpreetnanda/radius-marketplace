@@ -1,12 +1,9 @@
 package com.radius.marketplace.model;
 
-import com.radius.marketplace.util.SearchUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.persistence.*;
 
 @Data
 @Builder
@@ -15,8 +12,12 @@ import javax.persistence.*;
 public class PropertySearchResponse {
     private Property property;
     private double distance;
+    private double budgetOffPrice;
+    private double budgetOffPercentage;
+    private double distanceMatchPercentage;
+    private double budgetMatchPercentage;
 
     public double getMatchPercentage() {
-        return SearchUtil.calculateMatchPercentage(this.distance);
+        return this.distanceMatchPercentage + this.budgetMatchPercentage;
     }
 }
